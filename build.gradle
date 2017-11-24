@@ -1,8 +1,8 @@
 plugins {
-    id 'java'
-    id 'maven'
-    id 'signing'
-    id 'net.minecrell.licenser' version '0.3'
+  id 'java'
+  id 'maven'
+  id 'signing'
+  id 'net.minecrell.licenser' version '0.3'
 }
 
 group 'net.kyori'
@@ -12,82 +12,98 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 tasks.withType(JavaCompile) {
-    options.compilerArgs += ['-Xlint:all', '-Xlint:-path', '-parameters']
-    options.deprecation = true
-    options.encoding = 'UTF-8'
+  options.compilerArgs += ['-Xlint:all', '-Xlint:-path', '-parameters']
+  options.deprecation = true
+  options.encoding = 'UTF-8'
 }
 
 license {
-    header project.file('header.txt')
-    include '**/*.java'
-    newLine false
+  header project.file('header.txt')
+  include '**/*.java'
+  newLine false
 }
 
 repositories {
-    mavenLocal()
-    mavenCentral()
+  mavenLocal()
+  mavenCentral()
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
+  testCompile 'junit:junit:4.12'
 }
 
 task javadocJar(type: Jar) {
-    classifier 'javadoc'
-    from javadoc
+  classifier 'javadoc'
+  from javadoc
 }
 
 task sourcesJar(type: Jar) {
-    classifier 'sources'
-    from sourceSets.main.allSource
+  classifier 'sources'
+  from sourceSets.main.allSource
 }
 
 artifacts {
-    archives javadocJar
-    archives sourcesJar
+  archives javadocJar
+  archives sourcesJar
 }
 
 signing {
-    required { !project.version.endsWith('-SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
-    sign configurations.archives
+  required { !project.version.endsWith('-SNAPSHOT') && gradle.taskGraph.hasTask(':uploadArchives') && project.hasProperty('signing.keyId') }
+  sign configurations.archives
+}
+
+jar {
+  manifest.attributes(
+    'Automatic-Module-Name': 'net.kyori.version'
+  )
 }
 
 if(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword')) {
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+  uploadArchives {
+    enabled = System.getenv('TRAVIS') == null || project.version.endsWith('-SNAPSHOT')
 
-                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
-                }
+    repositories {
+      mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
-                }
-
-                pom.project {
-                    name project.name
-
-                    issueManagement {
-                        system 'GitHub Issues'
-                        url 'https://github.com/KyoriPowered/version/issues'
-                    }
-
-                    licenses {
-                        license {
-                            name 'MIT License'
-                            url 'https://opensource.org/licenses/MIT'
-                        }
-                    }
-
-                    scm {
-                        connection 'scm:git@github.com:KyoriPowered/version.git'
-                        developerConnection 'scm:git@github.com:KyoriPowered/version.git'
-                        url 'https://github.com/KyoriPowered/version/'
-                    }
-                }
-            }
+        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+          authentication(userName: sonatypeUsername, password: sonatypePassword)
         }
+
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+          authentication(userName: sonatypeUsername, password: sonatypePassword)
+        }
+
+        pom.project {
+          description 'A split of the versioning package of the maven-artifact project, with minor changes to not require other maven components.'
+          name project.name
+          url 'https://github.com/KyoriPowered/version'
+
+          developers {
+            developer {
+              name 'kashike'
+            }
+          }
+
+          issueManagement {
+            system 'GitHub Issues'
+            url 'https://github.com/KyoriPowered/version/issues'
+          }
+
+          licenses {
+            license {
+              name 'MIT License'
+              url 'https://opensource.org/licenses/MIT'
+            }
+          }
+
+          scm {
+            connection 'scm:git@github.com:KyoriPowered/version.git'
+            developerConnection 'scm:git@github.com:KyoriPowered/version.git'
+            url 'https://github.com/KyoriPowered/version/'
+          }
+        }
+      }
     }
+  }
 }
